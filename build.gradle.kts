@@ -36,6 +36,10 @@ dependencies {
 
     // WebP support
     implementation("org.sejda.imageio:webp-imageio:0.1.6")
+
+    // Testing
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 intellijPlatform {
@@ -119,4 +123,8 @@ changelog {
     repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
     versionPrefix = ""
     headerParserRegex = Regex("""(\d+\.\d+\.\d+)""")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
