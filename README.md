@@ -36,6 +36,7 @@ It is designed for practical day-to-day use with a clean, native-feeling interfa
 - **Image scale control** for resizing output.
 - **Image quality adjustment** for better compression control.
 - **Density variant generation** for Android-style asset workflows.
+- **Flutter project support** by scanning assets from `pubspec.yaml`.
 - Built for **IntelliJ IDEA** and **Android Studio**.
 <!-- Plugin description end -->
 
@@ -78,7 +79,7 @@ It is designed for practical day-to-day use with a clean, native-feeling interfa
 ## Requirements
 
 - JDK 17
-- Kotlin Multiplatform projects or Android projects where image asset handling is needed
+- Kotlin Multiplatform, Android, or Flutter projects where image asset handling is needed
 - IntelliJ Platform compatible environment
 
 ---
