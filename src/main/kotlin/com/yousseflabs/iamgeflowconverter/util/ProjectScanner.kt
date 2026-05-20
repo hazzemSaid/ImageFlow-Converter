@@ -13,6 +13,12 @@ object ProjectScanner {
         ".dart_tool", ".flutter-plugins", "ephemeral", ".pub-cache"
     )
 
+    /**
+     * Scans the given project for image assets.
+     *
+     * @param project The IntelliJ project to scan.
+     * @return A list of discovered image files.
+     */
     fun scan(project: Project): List<ImageFile> {
         val basePath = project.basePath ?: return emptyList()
         val root = File(basePath)
@@ -31,6 +37,12 @@ object ProjectScanner {
         }
     }
 
+    /**
+     * Scans all directories under the given root, excluding ignored folders.
+     *
+     * @param root The project root directory.
+     * @return A list of discovered image files.
+     */
     private fun scanGeneralProject(root: File): List<ImageFile> {
         return root.walkTopDown()
             .onEnter { dir -> dir.name !in IGNORED_DIRS }
@@ -40,6 +52,13 @@ object ProjectScanner {
             .toList()
     }
 
+    /**
+     * Scans a Flutter project by reading assets from pubspec.yaml.
+     *
+     * @param root The project root directory.
+     * @param pubspecFile The pubspec.yaml file used to resolve assets.
+     * @return A list of discovered image files.
+     */
     private fun scanFlutterProject(root: File, pubspecFile: File): List<ImageFile> {
         val assetPaths = extractFlutterAssets(pubspecFile)
         val results = mutableListOf<ImageFile>()
@@ -62,45 +81,61 @@ object ProjectScanner {
     }
 
     /**
-     * A simple parser to extract asset paths from pubspec.yaml
+     * Extracts Flutter asset paths from the given pubspec.yaml file.
+     *
+     * @param pubspecFile The pubspec.yaml file to parse.
+     * @return A list of asset paths as declared under the assets section.
      */
-    internal fun extractFlutterAssets(pubspecFile: File): List<String> {
+    private fun extractFlutterAssets(pubspecFile: File): List<String> {
         val lines = pubspecFile.readLines()
-        val assets = mutableListOf<String>()
-        var inFlutterSection = false
+        val assetLines = extractAssetLines(lines)
+        return parseAssetPaths(assetLines)
+    }
+
+    /**
+     * Collects raw asset entries from a pubspec.yaml file.
+     *
+     * @param lines The pubspec.yaml file lines.
+     * @return A list of raw asset lines, including the leading dash.
+     */
+    private fun extractAssetLines(lines: List<String>): List<String> {
+        val result = mutableListOf<String>()
         var inAssetsSection = false
 
         for (line in lines) {
             val trimmed = line.trim()
-            if (trimmed.startsWith("#")) continue // skip comments
-
-            if (trimmed == "flutter:") {
-                inFlutterSection = true
-                inAssetsSection = false
-                continue
-            }
-
-            if (inFlutterSection && trimmed == "assets:") {
-                inAssetsSection = true
-                continue
-            }
-
-            if (inFlutterSection && inAssetsSection) {
-                if (trimmed.startsWith("-")) {
-                    val path = trimmed.substring(1).trim().trimEnd('/')
-                    if (path.isNotEmpty()) {
-                        assets.add(path)
-                    }
-                } else if (line.isNotEmpty() && !line.startsWith(" ") && !line.startsWith("-")) {
-                    // If we meet a line that is not indented, we left the flutter/assets section
-                    inFlutterSection = false
-                    inAssetsSection = false
+            if (!trimmed.startsWith("#")) {
+                when {
+                    trimmed == "assets:" -> inAssetsSection = true
+                    inAssetsSection && trimmed.startsWith("-") -> result.add(trimmed)
+                    inAssetsSection && line.isNotBlank() 
+                        && !line.startsWith(" ") 
+                        && !line.startsWith("\t") -> inAssetsSection = false
                 }
             }
         }
-        return assets
+        return result
     }
 
+    /**
+     * Normalizes asset lines to relative asset paths.
+     *
+     * @param assetLines Raw asset lines as declared in pubspec.yaml.
+     * @return A list of cleaned asset paths.
+     */
+    private fun parseAssetPaths(assetLines: List<String>): List<String> {
+        return assetLines
+            .map { it.removePrefix("-").trim().trimEnd('/') }
+            .filter { it.isNotEmpty() }
+    }
+
+    /**
+     * Creates an [ImageFile] if the file extension is supported.
+     *
+     * @param file The candidate file.
+     * @param root The project root used to compute relative paths.
+     * @return The created ImageFile, or null if not an image.
+     */
     private fun createImageFile(file: File, root: File): ImageFile? {
         val ext = ImageExtension.from(file) ?: return null
         return ImageFile(

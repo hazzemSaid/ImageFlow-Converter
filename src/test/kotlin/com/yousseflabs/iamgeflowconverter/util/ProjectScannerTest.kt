@@ -18,7 +18,7 @@ class ProjectScannerTest {
                 - assets/images/
         """.trimIndent())
 
-        val assets = ProjectScanner.extractFlutterAssets(pubspecFile)
+        val assets = invokeExtractFlutterAssets(pubspecFile)
         assertEquals(listOf("assets", "assets/images"), assets)
     }
 
@@ -31,7 +31,7 @@ class ProjectScannerTest {
               uses-material-design: true
         """.trimIndent())
 
-        val assets = ProjectScanner.extractFlutterAssets(pubspecFile)
+        val assets = invokeExtractFlutterAssets(pubspecFile)
         assertEquals(emptyList<String>(), assets)
     }
 
@@ -46,7 +46,14 @@ class ProjectScannerTest {
                 - assets/
         """.trimIndent())
 
-        val assets = ProjectScanner.extractFlutterAssets(pubspecFile)
+        val assets = invokeExtractFlutterAssets(pubspecFile)
         assertEquals(listOf("assets"), assets)
+    }
+
+    private fun invokeExtractFlutterAssets(pubspecFile: File): List<String> {
+        val method = ProjectScanner::class.java.getDeclaredMethod("extractFlutterAssets", File::class.java)
+        method.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(ProjectScanner, pubspecFile) as List<String>
     }
 }
